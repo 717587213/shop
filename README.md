@@ -7,7 +7,6 @@
 - 目前只对接了部分接口，如果接口报错404，说明该接口还尚未配置Mock数据，后续会继续完善。
 - 有需要模拟数据界面，可以提ISSUE；
 
-> 小程序商家管理端：https://github.com/coolhwm/leshare-seller-wepy
 
 ## 部分截图
 ![预览1](http://img.leshare.shop/github/customer/preivew-001.jpg)
