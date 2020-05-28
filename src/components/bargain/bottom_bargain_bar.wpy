@@ -1,0 +1,159 @@
+<template>
+  <view class="buy-bar-placeholder">
+  </view>
+  <view class="row bargain-bar-box">
+    <view class="column-center btn-home" @tap="home">
+      <icon class="home normal" color="gray"/>
+      <text class="xs">首页</text>
+    </view>
+    <view class="column-center btn-fav" @tap="fav">
+      <icon class="like{{!isFav ? '' : '-fill'}} normal" style="color: {{!isFav ? 'gray' : 'red'}}" />
+      <text class="xs">收藏</text>
+    </view>
+    <view class="column-center btn-buy" @tap="handleDigit({{rule.goods}})" wx:if="{{rule.goods.type == 'digit'}}">
+      <text class="xxl money-box">￥{{rule.goods.priceLable}}</text>
+      <text>单独购买</text>
+    </view>
+    <view class="column-center btn-buy" @tap="handleBuy({{rule.goods}})" wx:else>
+      <text class="xxl money-box">￥{{rule.goods.sellPrice}}</text>
+      <text>单独购买</text>
+    </view>
+    <view wx:if="{{rule.status === 'OFF'}}" class="column-center btn-disabled">
+      <text>活动已关闭</text>
+    </view>
+    <view wx:elif="{{rule.isBegin}}" class="column-center btn-disabled">
+      <text>活动未开启</text>
+    </view>
+    <view wx:elif="{{rule.isTimeOut}}" class="column-center btn-disabled">
+      <text>活动已过期</text>
+    </view>
+    <view wx:elif="{{rule.limitTimes <= rule.joinTimes}}" class="column-center btn-disabled">
+      <text>限购{{rule.limitTimes}}件</text>
+    </view>
+    <view wx:elif="{{rule.limitCount <= rule.bargainedCount}}" class="column-center btn-disabled">
+      <text>已售罄</text>
+    </view>
+    <form wx:else report-submit="true" style="height: 100%" @submit="reportFormId" >
+      <button class="column-center btn-bargain" style="border-radius: 0" plain  open-type="getPhoneNumber" form-type="submit" bindgetphonenumber="regist" wx:if="{{member == null}}">
+        <text class="xxl money-box" style="line-height: 50rpx;">￥{{rule.floorPrice}}</text>
+        <text style="line-height: 42rpx;">发起砍价</text>
+      </button>
+      <button class="column-center btn-bargain" style="border-radius: 0" plain @tap="begin" form-type="submit" wx:else>
+        <text class="xxl money-box" style="line-height: 50rpx;">￥{{rule.floorPrice}}</text>
+        <text style="line-height: 42rpx;">发起砍价</text>
+      </button>
+    </form>
+  </view>
+</template>
+
+<script>
+  import favorite from '../../api/favorite';
+  import router from '../../mixins/router';
+  import wepy from 'wepy';
+  import Tips from '../../utils/Tips';
+  import { connect } from 'wepy-redux';
+  import { handleGetPhoneNumber } from '../../api/wx_auth';
+  import store from '../../store/utils';
+
+  @connect({
+    member: store.get('member')
+  })
+  export default class BargainBar extends wepy.component {
+    props = {
+      rule: {}
+    };
+    data = {
+      isFav: false,
+      state: 'begin',
+      id: ''
+    };
+    methods = {
+      async fav() {
+        if (this.isFav) {
+          await Tips.confirm('确认取消收藏?');
+          await favorite.remove(this.rule.goods.id);
+        } else {
+          await favorite.add(this.rule.goods.id);
+          await Tips.success('收藏成功');
+        }
+        this.isFav = !this.isFav;
+        this.$apply();
+      },
+      home () {
+        this.$root.$switch(`/pages/home/template`)
+      },
+      async regist({detail}) {
+        await handleGetPhoneNumber(detail);
+        this.bargain(this.rule, this.rule.id, this.state, this.id);
+        Tips.loaded();
+      },
+      begin() {
+        this.bargain(this.rule, this.rule.id, this.state, this.id);
+      }
+    };
+    computed = {
+    };
+    watch = {
+      async rule(current, origin) {
+        if (origin != null && origin.id != null) return;
+        const result = await favorite.is(current.goods.id);
+        this.isFav = result.isFavorite === 1;
+        this.$apply();
+      }
+    };
+    mixins = [router];
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+
+  $btn-width: 260rpx;
+  $btn-sm-width: (750rpx - $btn-width * 2) / 2;
+  .bargain-bar-box{
+    position: fixed;
+    bottom: 0;
+    height: 105rpx;
+    width: 100%;
+    border-top: $border;
+    background-color: white;
+    .btn-fav{
+      border-left: $border;
+    }
+    .btn-fav, .btn-home{
+      width: $btn-sm-width;
+      height: inherit;
+    }
+    .btn-buy, .btn-bargain{
+      height: 100%;
+      width: $btn-width;
+      background-color: white;
+      border-left: $border;
+      text{
+        color: $color-primary;
+      }
+      .money-box{
+        font-weight: bold;
+      }
+    }
+    .btn-bargain{
+      background-color:$color-primary;
+      text{
+        color: #fff;
+      }
+    }
+    .btn-disabled{
+      height: 100%;
+      width: $btn-width;
+      border-left: $border;
+      background-color:$color-weak;
+      text{
+        color: #fff;
+      }
+    }
+  }
+  .buy-bar-placeholder{
+    height: 105rpx;
+    width: 100%;
+  }
+</style>

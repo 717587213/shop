@@ -1,0 +1,115 @@
+<template>
+  <view class="column goods-grid-box">
+    <view class="grid-discount-box row" wx:if="{{goods.discount}}">
+      <icon class="vip xsmall" color="white" /><text> 会员{{goods.discountRate}}</text>
+    </view>
+    <!--图片-->
+    <view>
+      <image class="goods-image" lazy-load src="{{goods.imageUrl}}/small" @tap="routeToGoods({{goods.id}})"></image>
+    </view>
+    <view class="goods-title" @tap="routeToGoods({{goods.id}})">
+      <text wx:if="{{goods.isGoodsName}}">{{goods.name}}</text>
+    </view>
+    <view class="row-between" wx:if="{{goods.isSales || goods.isPrice}}">
+      <view class="content-box column" wx:if="{{goods.isSales || goods.isPrice}}">
+        <view class="row sale-tag-box">
+          <text class="xs muted" wx:if="{{goods.isSales}}">已售{{goods.salesVolume}}件</text>
+          <block wx:for="{{goods.tags}}" wx:key="index" wx:index="index" wx:for-item="item">
+            <text class="xxs primary tag-box ml10">{{item}}</text>
+          </block>
+        </view>
+        <view class="row" wx:if="{{goods.isPrice}}">
+          <text class="major lg" >￥{{goods.price}}</text>
+          <text class="cancel ml10" wx:if="{{goods.originalPrice}}">￥{{goods.originalPrice}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import router from '../../../mixins/router';
+  export default class GoodGridItem extends wepy.component {
+    props = {
+      goods: {}
+    };
+    methods = {
+      service (id) {
+        this.$root.$navigate(`/pages/goods/detail?goodsId=${id}`)
+      },
+      digit (id) {
+        this.$root.$navigate(`/pages/goods/detail?goodsId=${id}`)
+      }
+    };
+    mixins = [router]
+  }
+</script>
+
+<style lang="scss">
+  @import "../../../styles/variable";
+  .goods-grid-box{
+    $size: 373rpx;
+    position: relative;
+    background-color: white;
+    width: $size;
+    border-top: $border;
+    padding-bottom: 5rpx;
+
+    .grid-discount-box{
+      height: 45rpx;
+      position: absolute;
+      background-color: $color-major;
+      top: 0;
+      left: 0;
+      padding: 0 10rpx;
+      -webkit-filter:opacity(.7);
+      text{
+        color: white;
+        font-size: $text-sm;
+      };
+      .vip-icon{
+        vertical-align: middle;
+        width: 13px;
+        height: 13px;
+        margin-right: 5rpx;
+      }
+    }
+    .goods-image{
+      width: $size;
+      height: $size;
+    }
+    .goods-title{
+      max-height: 80rpx;
+      padding: 0 10rpx;
+      text{
+        word-break: break-all;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+    }
+    .tag-box{
+      border:1px solid $color-primary;
+      border-radius: 4rpx;
+      padding: 5rpx;
+      line-height: $text-xxs;
+    }
+    .content-box{
+      padding: 5rpx 10rpx;
+      overflow:hidden;
+      .sale-tag-box text{
+        white-space:nowrap;
+      }
+      .service-box{
+        background-color: $color-primary;
+        color: white;
+        padding: 5rpx 10rpx;
+        border-radius: 10rpx;
+        line-height: 29px;
+      }
+    }
+  }
+</style>

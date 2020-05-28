@@ -1,0 +1,32 @@
+<!--积分规则-->
+<template>
+  <view class="jf_rule column">
+    <text>签到积分规则：</text>
+    <text class="ml10">{{signIn.signRule.bonusDesc}}</text>
+    <text class="mt10">积分使用规则：</text>
+    <text class="ml10">{{signIn.signRule.useDesc}}</text>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy';
+
+  export default class PointsRule extends wepy.component {
+    data = {};
+    props = {
+      signIn: {}
+    };
+    events = {
+    };
+    methods = {};
+
+    onLoad () {}
+  }
+
+</script>
+<style lang="less">
+  .jf_rule {
+    background: #fff;
+    padding: 20rpx;
+  }
+
+</style>

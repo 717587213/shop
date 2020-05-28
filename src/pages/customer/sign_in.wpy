@@ -1,0 +1,317 @@
+<template>
+  <Loading :init.sync="init"/>
+  <view class="sgin_in" wx:if="{{init}}">
+    <image src="http://img.leshare.shop/shop/other/bc_qdyl.jpg" class="head_bc"></image>
+    <view class="qd_content">
+      <view class="jf">积分 : {{member.bonus}}</view>
+      <view class="out_crl">
+        <view class="second_crl" @tap="sign">
+          <form class="in_crl" report-submit="true" @submit="reportFormId" >
+            <button plain form-type="submit">
+              <text class="sign_state" wx:if="{{signed}}">已签到</text>
+              <text class="sign_state" wx:if="{{!signed}}"><text>签到</text></text>
+              <view class="line"/>
+              <text class="sign_times">连续{{signIn.continuationTimes}}天</text>
+            </button>
+          </form>
+        </view>
+      </view>
+      <view class="sign_doc" wx:if="{{signed && signIn.sevenHistory[0].bonusType == 0}}">今日已签到，获得{{signIn.sevenHistory[0].bonusResult}}积分</view>
+      <view class="sign_doc" wx:elif="{{signed && signIn.sevenHistory[0].bonusType == 1}}">今日已签到，获得一张优惠券，快去查看吧</view>
+      <view class="sign_doc" wx:if="{{!signed}}">今日还未签到</view>
+    </view>
+    <view class="line-box">
+      <wepySignTime :list.sync="signDay"/>
+    </view>
+
+    <!--广告栏-->
+    <view class="ad-banner" wx:if="{{adUnitId}}">
+      <ad unit-id="{{adUnitId}}"></ad>
+    </view>
+
+    <!--tab模块-->
+    <tab :tab.sync="tab" fixed="0"/>
+    <scroll-view scroll-y="true" class="swiper-item-box">
+      <!-- 积分排行 -->
+      <repeat for="{{bonusPank}}" key="index" index="index" item="item" wx:if="{{tab.selectedId==0}}">
+        <bonusPankItem :item.sync="item" :index.sync="index"/>
+      </repeat>
+      <!--占位符-->
+      <text wx:if="{{tab.selectedId==0 && bonusPank.length < 1}}" class="muted xxl row-center mt20">暂无本周积分排名</text>
+      <!-- 积分规则 -->
+      <pointsRule wx:if="{{tab.selectedId==1}}" :signIn.sync="signIn"/>
+      <!-- 积分记录 -->
+      <repeat for="{{page.list}}" key="index" index="index" item="item" wx:if="{{tab.selectedId==2}}">
+        <BonusItem :bonusInfo.sync="item"/>
+      </repeat>
+      <!-- 加载提示 -->
+      <Loadmore :page.sync="page"/>
+    </scroll-view>
+
+    <!--提示框-->
+    <Notice/>
+
+    <!--<Popups />-->
+
+    <ButtonWidget :bottom.sync="bottom"/>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { checkUserMember, initWxAppSync } from '../../api/wx_auth';
+  import base from '../../mixins/base';
+  import shop from '../../api/shop';
+  import router from '../../mixins/router';
+  import Tab from '../../components/zanui/tab';
+  import Tips from '../../utils/Tips';
+  import BonusItem from '../../components/customer/bonus_item';
+  import PointsRule from '../../components/customer/points_rule';
+  import bonusPankItem from '../../components/customer/bonus_pank_item';
+  import WepySignTime from '../../components/customer/sign_time';
+  import pagination from '../../mixins/pagination.wpy';
+  import Loadmore from '../../components/weui/loadmore';
+  import Placeholder from '../../components/common/placeholder';
+  import { connect } from 'wepy-redux';
+  import store from '../../store/utils';
+  import Lang from '../../utils/Lang'
+  import Loading from '../../components/common/loading';
+  import Notice from '../../components/shop/notice';
+  import member from '../../api/member';
+  // import Popups from '../../components/shop/popups'
+  import ButtonWidget from '../../components/template/button_widget';
+  import Event from '../../utils/Event';
+
+  @connect({
+    member: store.get('member')
+  })
+  export default class SignIn extends wepy.page {
+    data = {
+      init: false,
+      tab: {
+        list: [
+          {id: 0, title: '本周积分排行'},
+          {id: 1, title: '积分规则'},
+          {id: 2, title: '签到记录'}
+        ],
+        selectedId: 0
+      },
+      page: {
+        list: []
+      },
+      signed: false,
+      signIn: null,
+      type: '',
+      bonusPank: null,
+      adUnitId: null
+    };
+    params () {
+      return {
+        member_id: this.member.memberId,
+        by: 'sign_date',
+        sort: 'desc'
+      };
+    };
+    async getUserSign () {
+      this.signIn = await shop.signList(this.member.memberId);
+      if (this.signIn == null || this.signIn.signRule == null) {
+        await Tips.modal('尚未开启签到');
+        wepy.navigateBack();
+        return;
+      }
+      if (this.signIn) {
+        const [page, list] = await Promise.all([shop.signHistory(), member.bonusPankList()]);
+        this.page = page;
+        this.bonusPank = list;
+        this.next();
+      }
+    }
+    // 点击签到
+    async doSign () {
+      Tips.loading();
+      await shop.sign(this.member.memberId);
+      Tips.loaded();
+      Tips.success('签到成功');
+      await this.getUserSign();
+      const notice = {
+        title: '签到奖励',
+        btnText: '确定',
+        content: this.signIn.sevenHistory[0].bonusType == 0 ? `今日已签到，获得${this.signIn.sevenHistory[0].bonusResult}积分` : `今日已签到，获得一张优惠券，快去查看吧`
+      };
+      this.$invoke('Notice', 'open', notice);
+      Event.emit(Event.SIGN_UPDATE);
+    }
+
+    async onLoad () {
+      await initWxAppSync();
+      await checkUserMember();
+      await this.getUserSign();
+      this.loaded();
+    }
+    methods = {
+      // 点击签到事件
+      async sign () {
+        if (this.signed) {
+          Tips.alert('你今天已签过了!');
+        } else {
+          await this.doSign();
+          await store.refresh('member');
+          this.$apply();
+        }
+        if (this.type == 'home') {
+          setTimeout(() => {
+            wepy.navigateBack();
+          }, 1000);
+        }
+      }
+    };
+    computed = {
+      // 判断当天是否签到
+      signs () {
+        const now = new Date();
+        if (!this.signIn) {
+          return;
+        }
+        if (this.signIn.lastDate == Lang.dateFormate(now, 'yyyyMMdd')) {
+          this.signed = true;
+        }
+      },
+      signDay() {
+        if (this.signIn == null) return;
+        const day = [];
+        for (let i = 6; i >= 0; i--) {
+          let date = new Date();
+          date.setDate(date.getDate() - i);
+          if (this.signIn.sevenHistory.find(item => item.signDate == Lang.dateFormate(date, 'yyyyMMdd'))) {
+            day.push({signTime: date.getDate(), signed: 1});
+          } else {
+            day.push({signTime: date.getDate(), signed: 0});
+          }
+        }
+        return day;
+      }
+    };
+    config = {
+      navigationBarTitleText: '签到有礼'
+    };
+    components = {
+      tab: Tab,
+      pointsRule: PointsRule,
+      wepySignTime: WepySignTime,
+      Placeholder: Placeholder,
+      Loadmore: Loadmore,
+      BonusItem: BonusItem,
+      Notice: Notice,
+      Loading: Loading,
+      bonusPankItem: bonusPankItem,
+      // Popups: Popups,
+      ButtonWidget: ButtonWidget
+    };
+    mixins = [base, pagination, router];
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .sgin_in{
+    width: 750rpx;
+    overflow: hidden;
+  }
+  .qd_content {
+    position: relative;
+    z-index: 6;
+    height: 460rpx;
+    width: 100%;
+  }
+  .head_bc {
+    height: 460rpx;
+    width: 100%;
+    position: absolute;
+  }
+  .jf {
+    font-size: 32rpx;
+    color: #fff;
+    padding: 50rpx 0rpx 10rpx 35rpx;
+  }
+  .in_crl {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #FFF;
+    border-radius: 1000rpx;
+    border: 2rpx solid #7fbcff;
+    bottom: 0;
+    height: 200rpx;
+    left: 0;
+    margin: auto;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 200rpx;
+    z-index: 100;
+    text-align: center;
+  }
+  .second_crl {
+    position: relative;
+    border-radius: 1000rpx;
+    width: 235rpx;
+    height: 235rpx;
+    margin: 0 auto;
+    top: 15rpx;
+    z-index: 3;
+    background: #fff;
+  }
+  .out_crl {
+    position: relative;
+    border-radius: 1000rpx;
+    width: 265rpx;
+    height: 265rpx;
+    margin: 0 auto;
+    z-index: 2;
+    background: #f40;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  .sign_state {
+    line-height: normal;
+    padding: 0;
+    margin-bottom: 15rpx;
+    margin-top: 25rpx;
+    display: block;
+    font-size: 40rpx;
+    font-weight: 600;
+    color: $color-primary-blue;
+    text{
+      font-size: 40rpx;
+      font-weight: 600;
+      color: $color-primary-blue;
+    }
+  }
+  .line {
+    border: 1rpx solid #dcdcdc;
+    width: 165rpx;
+    margin: 0 auto;
+  }
+  .sign_times {
+    font-size: 30rpx;
+    color: $color-primary-blue;
+    display: block;
+  }
+  .sign_doc {
+    font-size: 30rpx;
+    text-align: center;
+    color: #fff;
+    margin-top: 30rpx;
+  }
+  .tab_box {
+    background: #fff;
+    padding: 0 120rpx;
+  }
+  .line-box {
+    height: 100rpx;
+    position: relative;
+    background: #fff;
+    margin-bottom: 10rpx;
+  }
+</style>

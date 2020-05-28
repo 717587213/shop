@@ -1,0 +1,388 @@
+<template>
+  <Loading :init.sync="init"/>
+  <view class="template-box" wx:if="{{init}}">
+    <repeat for="{{components}}" index="index" item="item">
+      <!--搜索栏-->
+      <block wx:if="{{item.type == 'SEARCH_BAR'}}">
+        <SearchBar :param.sync="item"/>
+      </block>
+
+      <!--搜索栏-->
+      <block wx:if="{{item.type == 'SEARCH_SHOP_BAR'}}">
+        <SearchShopBar :param.sync="item"/>
+      </block>
+
+      <!--店铺信息-->
+      <block wx:if="{{item.type == 'SHOP_BAR'}}">
+        <ShopBar :param.sync="item"/>
+      </block>
+
+      <!--轮播图-->
+      <block wx:if="{{item.type == 'SWIPER'}}">
+        <SwiperBar :param.sync="item" />
+      </block>
+
+      <!--图片橱窗-->
+      <block wx:if="{{item.type == 'IMAGE_BOX'}}">
+        <ImageBox :param.sync="item" />
+      </block>
+
+      <!--热区橱窗-->
+      <block wx:if="{{item.type == 'HOT_AREA_BOX'}}">
+        <HotAreaBox :param.sync="item" />
+      </block>
+
+      <!--优惠券橱窗-->
+      <block wx:if="{{item.type == 'COUPON_BOX'}}">
+        <CouponBox :param.sync="item" />
+      </block>
+
+      <!--商品橱窗-->
+      <block wx:if="{{item.type == 'GOODS_BOX'}}">
+        <GoodsBox :param.sync="item" />
+      </block>
+
+      <!--公告栏-->
+      <block wx:if="{{item.type == 'NOTICE_BAR'}}">
+        <NoticeBar :param.sync="item" />
+      </block>
+
+      <!--版权栏-->
+      <block wx:if="{{item.type == 'COPYRIGHT'}}">
+        <Copyright :param.sync="item" />
+      </block>
+
+      <!--拼团橱窗-->
+      <block wx:if="{{item.type == 'GROUP_BOX'}}">
+        <GroupBox :param.sync="item" />
+      </block>
+
+      <!--砍价橱窗-->
+      <block wx:if="{{item.type == 'BARGAIN_BOX'}}">
+        <BargainBox :param.sync="item" />
+      </block>
+
+      <!--分隔符-->
+      <block wx:if="{{item.type == 'SEPARATOR'}}">
+        <Separator :param.sync="item" />
+      </block>
+
+      <!--地址栏-->
+      <block wx:if="{{item.type == 'ADDRESS_BOX'}}">
+        <AddressBox :param.sync="item" />
+      </block>
+
+      <!--视频窗口-->
+      <block wx:if="{{item.type == 'VIDEO_BOX'}}">
+        <VideoBox :param.sync="item" />
+      </block>
+
+      <!--广告窗口-->
+      <block wx:if="{{item.type == 'AD_BANNER'}}">
+        <ad unit-id="{{item.unitId}}"></ad>
+      </block>
+
+      <!--门店列表-->
+      <block wx:if="{{item.type == 'SHOP_LIST'}}">
+        <ShopList :param.sync="item" />
+      </block>
+
+      <!--门店列表-->
+      <block wx:if="{{item.type == 'PAYMENT_BAR'}}">
+        <PaymentBar :param.sync="item" />
+      </block>
+
+      <!--累计栏-->
+      <block wx:if="{{item.type == 'GIFIT_BAR'}}">
+        <GifitBar :param.sync="item"/>
+      </block>
+
+
+      <!--间隔-->
+      <view class="h-gap" wx:if="{{item.border !== 'none'}}"></view>
+    </repeat>
+
+    <!--插件-->
+    <repeat for="{{plugins}}" index="index" item="item">
+      <!--滑出购物面板-->
+      <block wx:if="{{item.type == 'SKU_SLIDE_PANEL'}}" >
+        <SilderPanel />
+      </block>
+
+      <!--弹出购物面板-->
+      <block wx:if="{{item.type == 'SKU_POPUP_PANEL'}}" >
+        <PopupPanel />
+      </block>
+
+      <!--浮动购物车-->
+      <block wx:if="{{item.type == 'CART_WIDGET'}}" >
+        <CartWidget />
+      </block>
+
+      <!--状态提示-->
+      <block wx:if="{{item.type == 'STATUS_WIDGET'}}" >
+        <StatusWidget />
+      </block>
+
+      <!--浮动串口-->
+      <block wx:if="{{item.type == 'BUTTON_WIDGET'}}" >
+        <ButtonWidget :param="item" />
+      </block>
+    </repeat>
+
+    <Popups />
+  </view>
+</template>
+
+<script>
+  import store from '../../store/utils';
+  import { connect } from 'wepy-redux';
+  import { initWxAppSync, relaunchWxApp, setInviteId } from '../../api/wx_auth';
+  import shop from '../../api/shop';
+  import config from '../../api/config';
+  import wepy from 'wepy';
+  import base from '../../mixins/base';
+  import Loading from '../../components/common/loading';
+  import SearchBar from '../../components/template/search_bar';
+  import SwiperBar from '../../components/template/swiper_bar';
+  import ShopBar from '../../components/shop/header';
+  import ImageBox from '../../components/template/image_box';
+  import GoodsBox from '../../components/template/goods_box';
+  import CouponBox from '../../components/template/coupon_box';
+  import GoodsPanel from '../../components/goods/slider_buy_panel';
+  import SkuSelector from '../../components/goods/popup_buy_panel';
+  import CartWidget from '../../components/template/cart_widget';
+  import NoticeBar from '../../components/template/notice_bar';
+  import HotAreaBox from '../../components/template/hot_area_box';
+  import Copyright from '../../components/common/copyright';
+  import ButtonWidget from '../../components/template/button_widget';
+  import GroupBox from '../../components/template/group_box';
+  import BargainBox from '../../components/template/bargain_box';
+  import Separator from '../../components/template/separator';
+  import AddressBox from '../../components/template/address_box';
+  import VideoBox from '../../components/template/video_box';
+  import ShopList from '../../components/template/shop_list';
+  import SearchShopBar from '../../components/template/search_shop_bar';
+  import PaymentBar from '../../components/template/payment_bar';
+  import GifitBar from '../../components/template/gifit_bar';
+  import _ from 'underscore';
+  import Popups from '../../components/shop/popups'
+
+  @connect({
+    homePageId: store.get('homePageId'),
+    shop: store.get('shop'),
+    campaign: store.get('campaign')
+  })
+  export default class IndexTemplate extends wepy.page {
+    data = {
+      pageId: null,
+      init: false,
+      components: null,
+      plugins: null,
+      triggers: [],
+      param: null,
+      scene: null
+    };
+    onShow () {
+      this.disableDigest();
+    }
+    onHide () {
+      this.disableDigest();
+    }
+    disableDigest () {
+      this.$$phase = true;
+      setTimeout(() => {
+        this.$$phase = false;
+      })
+    }
+    async onLoad ({pageId, scene, reLaunch}) {
+      setInviteId(scene);
+      if (reLaunch == 1) {
+        relaunchWxApp();
+      }
+      // 登录检查
+      await initWxAppSync();
+      this.scene = scene;
+      // 渲染页面组件
+      this.pageId = pageId;
+      await this.renderTemplatePage();
+      // 渲染导航栏
+      this.renderNavigationBar();
+      // 执行触发器
+      this.runTriggers();
+    };
+    /**
+     * 渲染页面
+     */
+    async renderTemplatePage() {
+      if (this.pageId) {
+        console.info(`[template] load template page id=${this.pageId}`);
+      } else if (this.homePageId) {
+        console.info(`[template] load home page`);
+        this.pageId = this.homePageId;
+      }
+      if (_.isNull(this.pageId) || this.pageId == null) {
+        console.warn(`[template] page_id is ${this.pageId}, render fail`);
+        return;
+      }
+      const page = await config.layout(this.pageId);
+      if (page == null) {
+        console.info(`[template] page is null, render fail`);
+        return;
+      }
+      this.components = page.components;
+      this.plugins = page.plugins;
+      this.triggers = page.triggers;
+      this.param = page.param;
+      this.loaded();
+      console.info(`[template] render template page success`);
+      this.components.forEach(item => {
+        if (item.type == 'SHOP_LIST') {
+          // 拉起定位
+          wepy.getLocation().then(location => {
+            // 加载组件
+            this.$invoke('ShopList', 'load', location);
+            this.$invoke('SearchShopBar', 'setLocation', location);
+          }, () => {
+            this.$invoke('ShopList', 'load', null);
+          });
+        } else if (item.type === 'GIFIT_BAR') {
+          this.$invoke('GifitBar', 'load', null);
+        }
+      });
+    }
+    /**
+     * 渲染标题栏
+     */
+    renderNavigationBar() {
+      if (this.param == null || _.isEmpty(this.param.navigation)) {
+        return;
+      }
+      const {titleText, backgroundColor, textStyle} = this.param.navigation;
+      console.info(`[template] title=${titleText}, backgroundColor=${backgroundColor}, textStyle=${textStyle}`);
+      if (titleText) {
+        wepy.setNavigationBarTitle({
+          title: titleText
+        });
+      }
+      if (backgroundColor && textStyle) {
+        wepy.setNavigationBarColor({
+          backgroundColor: backgroundColor,
+          frontColor: textStyle
+        });
+      }
+    }
+    /**
+     * 运行触发器
+     */
+    runTriggers() {
+      if (this.triggers == null) {
+        return;
+      }
+      this.triggers.forEach(trigger => {
+        const methodName = trigger.method;
+        // 执行动态方法
+        if (methodName && typeof this[methodName] === 'function') {
+          const triggerMethod = this[methodName].bind(this);
+          triggerMethod();
+        }
+      });
+    }
+    /**
+     * 活动优惠券触发器
+     */
+    triggerCampaign() {
+      console.info(`[trigger] check campaign coupon`);
+      if (this.campaign) {
+        this.$preload('coupon', this.campaign);
+        this.$navigate('/pages/coupon/active');
+      }
+    }
+    /**
+     * 活动优惠券触发器
+     */
+    triggerVisitLog() {
+      const wxScene = wepy.$instance.globalData.scene;
+      console.info(`[trigger] visit log, custom_scene=${this.scene}, wx_scene=${wxScene}`);
+      shop.visit(this.scene, wxScene);
+      wepy.$instance.globalData.scene = '';
+    }
+    /**
+     * 页面分享
+     */
+    onShareAppMessage () {
+      if (this.param.share == null) {
+        const {name, avatar} = this.shop;
+        return {
+          title: `${name} 欢迎光临`,
+          imageUrl: `${avatar}/5x4`
+        };
+      } else {
+        return this.param.share;
+      }
+    }
+
+    /**
+     * 下拉刷新
+     */
+    async onPullDownRefresh () {
+      await this.renderTemplatePage();
+      wepy.stopPullDownRefresh();
+    }
+
+    /**
+     * 到达底部
+     */
+    async onReachBottom () {
+      this.$broadcast('on-reach-bottom');
+    }
+
+    methods = {
+    };
+    components = {
+      Loading: Loading,
+      SearchBar: SearchBar,
+      SwiperBar: SwiperBar,
+      ShopBar: ShopBar,
+      ImageBox: ImageBox,
+      GoodsBox: GoodsBox,
+      CouponBox: CouponBox,
+      SilderPanel: GoodsPanel,
+      PopupPanel: SkuSelector,
+      CartWidget: CartWidget,
+      NoticeBar: NoticeBar,
+      HotAreaBox: HotAreaBox,
+      Copyright: Copyright,
+      ButtonWidget: ButtonWidget,
+      GroupBox: GroupBox,
+      Separator: Separator,
+      BargainBox: BargainBox,
+      AddressBox: AddressBox,
+      VideoBox: VideoBox,
+      Popups: Popups,
+      ShopList: ShopList,
+      SearchShopBar: SearchShopBar,
+      PaymentBar: PaymentBar,
+      GifitBar: GifitBar
+    };
+    computed = {
+    };
+    mixins = [base];
+    config = {
+      enablePullDownRefresh: true
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .template-box{
+    width: 100%;
+    overflow-x: hidden;
+    .h-gap {
+      width: 100%;
+      height: 1px;
+      background-color: $color-border;
+    }
+  }
+</style>

@@ -1,0 +1,90 @@
+<template>
+  <view class="nav-box row-between {{last == 'true' ? 'nav-box-last' : ''}}">
+    <view class="header row">
+      <icon class="sender mr10" color="primary" wx:if="{{mode == 1}}"/>
+      <icon class="inshop mr10" color="primary" wx:if="{{mode == 2}}"/>
+      <text>{{title}}</text>
+    </view>
+    <view class="footer row" @tap="change({{mode}})" wx:if="{{shop.sellMode == 'BOTH'}}">
+      <text class="xs mr10 muted">{{exchangeText}}</text>
+      <icon class="exchange" color="primary"/>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { connect } from 'wepy-redux';
+  import store from '../../store/utils';
+
+  @connect({
+    shop: store.get('shop'),
+    status: store.get('status')
+  })
+  export default class ShopNav extends wepy.component {
+    props = {
+      mode: {
+        default: 1
+      },
+      tableNum: {
+        default: null
+      }
+    };
+    data = {
+      exchangeText: null
+    };
+    methods = {
+      change (mode) {
+        if (this.shop.sellMode != 'BOTH') {
+          return;
+        }
+        if (mode == 1) {
+          this.mode = 2
+        } else {
+          this.mode = 1
+        }
+        this.$emit('change', this.mode)
+      }
+    };
+    computed = {
+      // 需要进行优化
+      title() {
+        if (this.mode == 2) {
+          if (this.tableNum == null || this.tableNum == '@') {
+            return '堂食点餐';
+          } else {
+            return `当前餐桌号：${this.tableNum}桌`;
+          }
+        } else if (this.mode == 1) {
+          return `外卖点餐`;
+        } else {
+          return '在线点餐';
+        }
+      },
+      exchangeText() {
+        if (this.mode == 2) {
+          return '切换到外卖';
+        } else if (this.mode == 1) {
+          return '切换到堂食';
+        } else {
+          return '';
+        }
+      }
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .nav-box {
+    height: 27px;
+    position: relative;
+    background-color: #FFFFFF;
+    padding:8px 13px;
+    border-top: $border;
+  }
+  .nav-box-last{
+    border-bottom: $border;
+  }
+
+</style>

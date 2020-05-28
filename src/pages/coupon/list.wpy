@@ -1,0 +1,107 @@
+<template>
+  <Loading :init.sync="init"/>
+  <view class="container" wx:if="{{init}}">
+    <!--TAB 页-->
+    <ZanTab :tab.sync="tab" @change.user="switchTab" />
+
+    <!--列表展现-->
+    <repeat for="{{page.list}}" key="index" index="index" item="item">
+      <CouponItem :coupon.sync="item" @delete.user="delete" @select.user="detail"/>
+    </repeat>
+
+    <!-- 加载提示 -->
+    <Loadmore :page.sync="page"/>
+
+    <ButtonWidget/>
+
+    <!--占位符-->
+    <Placeholder :show.sync="isPageEmpty" message="您还没有相关优惠券" />
+
+    <!--广告栏-->
+    <view class="ad-banner" wx:if="{{adUnitId}}">
+      <ad unit-id="{{adUnitId}}"></ad>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import shop from '../../api/shop';
+  import base from '../../mixins/base';
+  import coupon from '../../api/coupon';
+  import pagination from '../../mixins/pagination.wpy';
+  import Placeholder from '../../components/common/placeholder';
+  import ZanTab from '../../components/zanui/tab';
+  import CouponItem from '../../components/coupons/display_item';
+  import Loadmore from '../../components/weui/loadmore';
+  import Event from '../../utils/Event';
+  import WxUtils from '../../utils/WxUtils';
+  import Loading from '../../components/common/loading';
+  import ButtonWidget from '../../components/template/button_widget';
+
+  export default class CouponList extends wepy.page {
+    data = {
+      init: false,
+      page: {},
+      tab: {
+        list: [{
+          id: 'NEVER_USED',
+          title: '未使用'
+        }, {
+          id: 'USED',
+          title: '已使用'
+        }, {
+          id: 'EXPIRED',
+          title: '已过期'
+        }],
+        selectedId: 'NEVER_USED',
+        scroll: false
+      },
+      adUnitId: null
+    };
+    async onLoad () {
+      this.page = coupon.page();
+      Event.listen(Event.COUPON_LIST_UPDATE, this.update.bind(this), this);
+      await this.next();
+    };
+    params() {
+      return {status: this.tab.selectedId};
+    }
+    methods = {
+      detail(coupon) {
+        // if (coupon.status != 'NEVER_USED') {
+        //   return;
+        // }
+        this.$preload('couponId', coupon.id);
+        this.$navigate('detail');
+      },
+      switchTab() {
+        this.reload();
+      },
+      use({detail}) {
+        shop.reportFormId(detail.formId);
+        WxUtils.backOrRedirect('/pages/shop/index');
+      }
+    };
+    events = {};
+    components = {
+      Placeholder: Placeholder,
+      ZanTab: ZanTab,
+      Loadmore: Loadmore,
+      CouponItem: CouponItem,
+      Loading: Loading,
+      ButtonWidget: ButtonWidget
+    };
+    mixins = [base, pagination];
+    config = {
+      navigationBarTitleText: '我的优惠券',
+      enablePullDownRefresh: true
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .ad-banner{
+  }
+</style>

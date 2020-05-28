@@ -1,0 +1,90 @@
+<template>
+  <view class="column group-info-box">
+    <view class="top-box">
+      <text>{{title}}</text>
+      <text class="xs muted" wx:if="{{ruleTip}}">{{ruleTip}}</text>
+    </view>
+    <view class="row-around content-box">
+      <view class="column-center info-rule-box">
+        <icon class="selected large" color="gray"/>
+        <text class="xs muted">{{firstTop}}</text>
+        <text class="xs muted">{{firstBottom}}</text>
+      </view>
+      <view>
+        <icon class="more" color="gray"/>
+      </view>
+      <view class="column-center info-rule-box">
+        <icon class="groups large" color="gray"/>
+        <text class="xs muted">{{secondTop}}</text>
+        <text class="xs muted">{{secondBottom}}</text>
+      </view>
+      <view>
+        <icon class="more" color="gray"/>
+      </view>
+      <view class="column-center info-rule-box">
+        <icon class="coin large" color="gray"/>
+        <text class="xs muted">{{thirdTop}}</text>
+        <text class="xs muted">{{thirdBottom}}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class GroupInfoBar extends wepy.component {
+    props = {
+      title: {
+        default: '砍价玩法'
+      },
+      firstTop: {
+        default: '选择商品'
+      },
+      firstBottom: {
+        default: '发起砍价'
+      },
+      secondTop: {
+        default: '邀请好友'
+      },
+      secondBottom: {
+        default: '帮忙砍价'
+      },
+      thirdTop: {
+        default: '立即出手'
+      },
+      thirdBottom: {
+        default: '下单购买'
+      },
+      ruleTip: {
+        detail: null
+      }
+    };
+    methods = {
+    };
+    components = {
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .group-info-box{
+    background-color: white;
+    padding: 0 20rpx;
+    margin-bottom: 10rpx;
+    .top-box{
+      border-bottom: $border;
+      padding: 20rpx 0;
+    }
+    .content-box{
+      text{
+        text-align: center;
+      }
+    }
+    .info-rule-box{
+      width: 25%;
+      padding: 20rpx 10rpx;
+    }
+  }
+</style>

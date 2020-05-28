@@ -1,0 +1,70 @@
+<template>
+  <view class="row bargain-detail-box" @tap="detail({{bargain.rule.id}})">
+    <view class="bargain-goods-image">
+      <image src="{{bargain.rule.goods.imageUrl}}" mode="aspectFill"/>
+    </view>
+    <view class="column bargain-goods-msg-box">
+      <text class="bargain-goods-name lg">{{bargain.rule.goods.name}}</text>
+      <view class="column">
+        <!--<text class="primary ml10">现价：￥{{bargain.balance}}</text>-->
+        <view class="row mt10">
+          <text class="bargain-price-box">底价:￥{{bargain.rule.floorPrice}}</text>
+          <text class="muted sellPrice-box sm">￥{{bargain.rule.goodsPrice}}</text>
+        </view>
+        <!--<text class="weak xs">立省{{bargain.disparityPrice}}</text>-->
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class BargainGoodsDetail extends wepy.component {
+    props = {
+      bargain: {}
+    };
+    data = {
+    };
+    methods = {
+      detail (id) {
+        this.$root.$navigate(`/pages/bargain/goods_detail?ruleId=${id}`)
+      }
+    };
+    watch = {
+    };
+    mixins = [];
+  }
+</script>
+
+<style lang="scss" scoped>
+  @import "../../styles/variable";
+  $img-height: 160rpx;
+  .bargain-detail-box{
+    margin-bottom: 10rpx;
+    background: white;
+    padding: 10rpx 20rpx;
+    align-items: flex-start;
+  }
+  .bargain-goods-image{
+    width: $img-height;
+    height: $img-height;
+    image{
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .bargain-goods-msg-box{
+    flex: 1;
+    height: $img-height;
+    padding-left: 20rpx;
+    .bargain-price-box{
+      font-size: $text-lg;
+      color: #e64340;
+    }
+    .sellPrice-box{
+      margin-left: 10rpx;
+      text-decoration: line-through;
+    }
+  }
+</style>

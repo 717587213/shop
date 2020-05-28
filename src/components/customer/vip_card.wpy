@@ -1,0 +1,232 @@
+<template>
+  <!-- 会员卡注册区域 -->
+  <view class="vip-box column-between" style="background-image: url('{{card.backgroundPicUrl}}');background-repeat:no-repeat; background-size:100% 100%;" wx:if="{{member == null}}">
+    <view class="column-center">
+      <image class="avatar"  src="{{avatarUrl}}"/>
+      <text class="user-name" style="color: {{card.color}}">{{nickName}}</text>
+    </view>
+    <form class="column-center"  report-submit="true" @submit="reportFormId">
+      <button  class="registe-btn" wx:if="{{card.extraParam != null && card.extraParam != '' && card.extraParam != '[]'}}" form-type="submit" @tap="complexRegist" style="color: {{card.color}}">绑定手机</button>
+      <button  class="registe-btn" open-type="getPhoneNumber" bindgetphonenumber="regist" wx:else style="color: {{card.color}}" form-type="submit">绑定手机</button>
+      <text class="xxs mt10" style="color: {{card.color}}">立即绑定手机可享受积分与折扣特权</text>
+    </form>
+  </view>
+
+  <!-- 会员卡区域 -->
+  <view class="vip-box column-between flex-start" style="background-image: url('{{card.backgroundPicUrl}}');background-repeat:no-repeat; background-size:100% 100%;" @tap="detail" wx:if="{{member != null}}">
+
+    <view class="row-between" style="width: 100%">
+      <view class="row">
+        <!--头像-->
+        <image class="avatar" src="{{avatarUrl}}"/>
+
+        <!--用户信息-->
+        <view class="info-box column">
+          <text class="user-name" style="color: {{card.color}}">{{nickName}}</text>
+          <text class="sm" style="color: {{card.color}}">{{levelName}}</text>
+          <view class="cost-box row">
+            <text class="sm" style="color: {{card.color}}">累计消费: {{member.totalCost}}元</text>
+            <text class="ml20 sm" wx:if="{{card.supplyBonus == 1}}" style="color: {{card.color}}">积分: {{member.bonus}}</text>
+          </view>
+
+        </view>
+      </view>
+      <icon class="qrcode xxlarge" color="white" style="color: {{card.color}}"  @tap.stop="info"/>
+    </view>
+    <view class="footer-box row-between" style="width: 100%">
+      <text class="xxl" style="color: {{card.color}}">{{numberText}}</text>
+      <view class="desc-box column">
+        <text class="sm" wx:if="{{parsentText}}">{{parsentText}}</text>
+        <text class="sm" wx:if="{{discountText}}">{{discountText}}</text>
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { saveWxUserPhone, checkUserInfoWithError } from '../../api/wx_auth';
+  import { connect } from 'wepy-redux';
+  import store from '../../store/utils';
+  import base from '../../mixins/base'
+  import Event from '../../utils/Event';
+  import Tips from '../../utils/Tips';
+  import router from '../../mixins/router';
+
+  @connect({
+    member: store.get('member'),
+    card: store.get('card'),
+    user: store.get('user')
+  })
+  export default class VipCard extends wepy.component {
+    props = {
+      param: {},
+      isDetail: {
+        default: 'true'
+      }
+    };
+    methods = {
+      async regist ({detail}) {
+        await checkUserInfoWithError();
+        if (detail.errMsg == 'getPhoneNumber:fail user deny') {
+          await Tips.alert('请允许授权');
+          return;
+        }
+        try {
+          Tips.loading();
+          const result = await saveWxUserPhone(detail);
+          if (result) {
+            await Tips.success('注册成功');
+            Event.emit(Event.MEMBER_CARD_UPDATE);
+          } else {
+            this.$root.$navigate('/package_member/pages/member/registe_member');
+          }
+          Tips.loaded();
+        } catch (e) {
+          console.info('注册失败', e);
+          Tips.loaded();
+          this.$root.$navigate('/package_member/pages/member/registe_member');
+        }
+      },
+      complexRegist() {
+        this.$root.$navigate('/package_member/pages/member/registe_member');
+      },
+      detail() {
+        if (this.isDetail == 'false') return;
+        this.$root.$navigate('/package_member/pages/member/vip_detail');
+      },
+      info() {
+        this.$root.$navigate('/package_member/pages/member/vip_info');
+      }
+    };
+    computed = {
+      avatarUrl () {
+        if (this.user == null || this.user.avatarUrl == null) {
+          return 'http://img.leshare.shop/shop/other/customer_white.png';
+        } else {
+          return this.user.avatarUrl;
+        }
+      },
+      nickName () {
+        if (this.user == null || this.user.nickName == null) {
+          return '微信用户';
+        } else {
+          return this.user.nickName;
+        }
+      },
+      levelName () {
+        if (this.member && this.card && this.card.supplyDiscount == 1 && this.member.discountRule) {
+          return this.member.discountRule.levelName;
+        } else {
+          return '普通会员';
+        }
+      },
+      parsentText () {
+        // 对合法性进行检查
+        const isRule = this.card && this.card.memberPresentRules && this.card.memberPresentRules.length > 0;
+        const isMember = this.member && this.member.memberPresentDetails && this.member.memberPresentDetails.length > 0;
+        // 没有规则的情况
+        if (!isRule || !isMember) return '';
+        const {unit} = this.card.memberPresentRules[0];
+        // 没有初始化的情况
+        if (!isRule || !isMember) return `当前已累计0${unit}`;
+        // 正常的情况
+        const {currentCount} = this.member.memberPresentDetails[0];
+        return `当前已累计${currentCount}${unit}`;
+      },
+      numberText() {
+        if (this.member == null || this.member.memberNumber == null) return;
+        const number = this.member.memberNumber;
+        let text = '';
+        for (let i = 0; i < number.length; i++) {
+          text += number[i];
+          if ((i + 1) % 4 == 0) {
+            text += ' ';
+          }
+        }
+        return text;
+      },
+      discountText() {
+        if (this.member == null || this.member.discountRule == null) return;
+        const {discountRule, customDiscount} = this.member;
+        const isCustomDiscount = customDiscount != null && customDiscount > 0 && customDiscount <= 100;
+        const discount = isCustomDiscount ? customDiscount : discountRule.discount;
+        if (discount < 100 && discount > 0) {
+          const discountText = (discount / 10).toFixed(1);
+          return `持卡享受${discountText}折优惠`;
+        }
+      }
+    };
+    mixins = [base, router]
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+  .flex-start {
+    align-items: flex-start;
+  }
+  .registe-btn {
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: white;
+    width: 200rpx;
+    font-size: $text-nm;
+    border: 1px solid white;
+    border-radius: 10px;
+    padding: 5px 15px;
+    line-height: 22px;
+  }
+  .avatar{
+    overflow: hidden;
+    display: block;
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 50%;
+    background-color: #FFF;
+    border: 2px solid #FFF;
+    box-shadow: 0 0 5px gray;
+  }
+  .vip-box {
+    box-shadow: 0 0 2px gray;
+    position: relative;
+    padding: 30rpx;
+    margin: 20rpx;
+    height: 300rpx;
+    background-color: $color-primary;
+    border-radius: 15rpx;
+    text {
+      color: white;
+    }
+    .info-box {
+      margin-left: 30rpx;
+    }
+    .user-name{
+      max-width: 300rpx;
+      color: white;
+      font-size: 32rpx;
+    }
+    .cost-box{
+      margin-top: 10rpx;
+      align-items:center;
+    }
+    .card-title{
+      border-bottom: 1px solid white;
+      padding: 0 5px;
+      text{
+        font-size: $text-xxl;
+        font-weight: bold;
+      }
+    }
+  }
+  .footer-box{
+    align-items: flex-end;
+    .desc-box {
+      align-items: flex-end;
+    }
+  }
+</style>

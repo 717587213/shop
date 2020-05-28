@@ -1,0 +1,61 @@
+<template>
+  <view class="container" wx:if="{{init}}">
+    <!--列表展现-->
+    <repeat for="{{pickCoupons}}" key="index" index="index" item="item">
+      <CouponItem :coupon.sync="item" @pick.user="pick" />
+    </repeat>
+
+    <!--占位符-->
+    <Placeholder :show.sync="isEmpty" message="目前没有可以领取的优惠券"/>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { connect } from 'wepy-redux';
+  import { initWxAppSync, checkUserInfo } from '../../api/wx_auth';
+  import base from '../../mixins/base';
+  import store from '../../store/utils';
+  import ShopHeader from '../../components/shop/header';
+  import Placeholder from '../../components/common/placeholder';
+  import CouponItem from '../../components/coupons/pick_item';
+
+  @connect({
+    pickCoupons: store.get('pickCoupons')
+  })
+  export default class CouponPick extends wepy.page {
+    data = {
+      init: false,
+      isEmpty: true
+    };
+    async onLoad () {
+      await initWxAppSync();
+      await checkUserInfo();
+      this.loaded();
+    };
+    async onPullDownRefresh () {
+      await store.refresh('coupon');
+      wepy.stopPullDownRefresh();
+    }
+    computed = {
+      isEmpty () {
+        if (this.pickCoupons == null) return;
+        return this.pickCoupons.length < 1;
+      }
+    };
+    components = {
+      Placeholder: Placeholder,
+      CouponItem: CouponItem,
+      ShopHeader: ShopHeader
+    };
+    mixins = [base];
+    config = {
+      navigationBarTitleText: '领取优惠券',
+      enablePullDownRefresh: true
+    };
+  }
+</script>
+
+<style lang="scss">
+  @import "../../styles/variable";
+</style>
